@@ -58,11 +58,11 @@ import java.util.Map;
  * When an {@link Environment} is being used by an {@code ApplicationContext}, it is
  * important that any such {@code PropertySource} manipulations be performed
  * <em>before</em> the context's {@link
- * org.springframework.context.support.AbstractApplicationContext#refresh() refresh()}
- * method is called. This ensures that all property sources are available during the
- * container bootstrap process, including use by {@linkplain
- * org.springframework.context.support.PropertySourcesPlaceholderConfigurer property
- * placeholder configurers}.
+ *
+ *
+ *
+ *
+ *
  *
  * @author Chris Beams
  * @since 3.1
@@ -81,7 +81,7 @@ public interface ConfigurableEnvironment extends Environment, ConfigurableProper
 	 * @throws IllegalArgumentException if any profile is null, empty or whitespace-only
 	 * @see #addActiveProfile
 	 * @see #setDefaultProfiles
-	 * @see org.springframework.context.annotation.Profile
+	 *
 	 * @see AbstractEnvironment#ACTIVE_PROFILES_PROPERTY_NAME
 	 */
 	void setActiveProfiles(String... profiles);
@@ -164,7 +164,7 @@ public interface ConfigurableEnvironment extends Environment, ConfigurableProper
 	 * property sources and profile information prior to calling {@code merge}.
 	 * @param parent the environment to merge with
 	 * @since 3.1.2
-	 * @see org.springframework.context.support.AbstractApplicationContext#setParent
+	 *
 	 */
 	void merge(ConfigurableEnvironment parent);
 

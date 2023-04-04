@@ -16,17 +16,10 @@
 
 package org.springframework.context.annotation;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
-
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinitionHolder;
-import org.springframework.beans.factory.support.AbstractBeanDefinition;
-import org.springframework.beans.factory.support.BeanDefinitionDefaults;
-import org.springframework.beans.factory.support.BeanDefinitionReaderUtils;
-import org.springframework.beans.factory.support.BeanDefinitionRegistry;
-import org.springframework.beans.factory.support.BeanNameGenerator;
+import org.springframework.beans.factory.support.*;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.EnvironmentCapable;
 import org.springframework.core.env.StandardEnvironment;
@@ -34,6 +27,9 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.PatternMatchUtils;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /**
  * A bean definition scanner that detects bean candidates on the classpath,
@@ -249,15 +245,16 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 	 * @return number of beans registered
 	 */
 	public int scan(String... basePackages) {
+		//获取 注册 BeanDefinition  个数
 		int beanCountAtScanStart = this.registry.getBeanDefinitionCount();
-
+		//扫包
 		doScan(basePackages);
 
 		// Register annotation config processors, if necessary.
 		if (this.includeAnnotationConfig) {
 			AnnotationConfigUtils.registerAnnotationConfigProcessors(this.registry);
 		}
-
+		//返回增加的BeanDefinition 个数
 		return (this.registry.getBeanDefinitionCount() - beanCountAtScanStart);
 	}
 
@@ -270,14 +267,25 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 	 * @return set of beans registered if any for tooling registration purposes (never {@code null})
 	 */
 	protected Set<BeanDefinitionHolder> doScan(String... basePackages) {
+		//至少指定一个包
 		Assert.notEmpty(basePackages, "At least one base package must be specified");
+		//创建一个BeanDefinitionHolder set 集合
 		Set<BeanDefinitionHolder> beanDefinitions = new LinkedHashSet<>();
-		for (String basePackage : basePackages) {
+
+		for (String basePackage : basePackages) {  //对包数据循环遍历
+			//获取BeanDefiniton 集合
 			Set<BeanDefinition> candidates = findCandidateComponents(basePackage);
+
+			//初始化工作
 			for (BeanDefinition candidate : candidates) {
+				//todo 解析Scope 注解,设置代理方式 追进入深入了解
 				ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(candidate);
-				candidate.setScope(scopeMetadata.getScopeName());
+
+				candidate.setScope(scopeMetadata.getScopeName()); //设置是否为单例
+
 				String beanName = this.beanNameGenerator.generateBeanName(candidate, this.registry);
+
+
 				if (candidate instanceof AbstractBeanDefinition) {
 					postProcessBeanDefinition((AbstractBeanDefinition) candidate, beanName);
 				}
@@ -289,11 +297,13 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 					definitionHolder =
 							AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
 					beanDefinitions.add(definitionHolder);
+
+					//注册 beanDefinitions
 					registerBeanDefinition(definitionHolder, this.registry);
 				}
 			}
 		}
-		return beanDefinitions;
+		return beanDefinitions;  // 返回所有的BeanDefinitionHolder;
 	}
 
 	/**
@@ -370,12 +380,22 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 	/**
 	 * Get the Environment from the given registry if possible, otherwise return a new
 	 * StandardEnvironment.
+	 * 该方法的作用是获取或创建Spring的Environment对象，
+	 * 用于配置Spring应用程序的环境。
+	 * \Environment对象用于表示当前应用程序的环境，
+	 * 包括配置文件、系统属性、环境变量等信息。在Spring中，
+	 * 可以通过Environment对象来获取这些配置信息。
+	 *
+	 * 该方法的实现逻辑是，首先尝试从BeanDefinitionRegistry中获取Environment对象，
+	 * 如果获取不到则创建一个新的Environment对象，并将其注册到BeanDefinitionRegistry中，以便在后续的Bean创建过程中可以使用。在创建Environment对象时，会根据当前应用程序的环境来选择不同的配置文件，以及设置相应的系统属性和环境变量。
 	 */
 	private static Environment getOrCreateEnvironment(BeanDefinitionRegistry registry) {
 		Assert.notNull(registry, "BeanDefinitionRegistry must not be null");
+		//尝试从BeanDefinitionRegistry中获取Environment对象
 		if (registry instanceof EnvironmentCapable) {
 			return ((EnvironmentCapable) registry).getEnvironment();
 		}
+		//  创建一个新的Environment对象，并将其注册到BeanDefinitionRegistry中，以便在后续的Bean创建过程中可以使用
 		return new StandardEnvironment();
 	}
 

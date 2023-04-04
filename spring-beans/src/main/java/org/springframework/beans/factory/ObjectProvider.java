@@ -16,13 +16,13 @@
 
 package org.springframework.beans.factory;
 
+import org.springframework.beans.BeansException;
+import org.springframework.lang.Nullable;
+
 import java.util.Iterator;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-
-import org.springframework.beans.BeansException;
-import org.springframework.lang.Nullable;
 
 /**
  * A variant of {@link ObjectFactory} designed specifically for injection points,
@@ -59,6 +59,8 @@ public interface ObjectProvider<T> extends ObjectFactory<T>, Iterable<T> {
 	 * @throws BeansException in case of creation errors
 	 * @see #getObject()
 	 */
+
+	// 处理判断有可用的bean的时候我们怎么做，可以重写
 	@Nullable
 	T getIfAvailable() throws BeansException;
 
@@ -102,6 +104,8 @@ public interface ObjectProvider<T> extends ObjectFactory<T>, Iterable<T> {
 	 * @throws BeansException in case of creation errors
 	 * @see #getObject()
 	 */
+
+	// 处理判断只有唯一的bean的时候我们怎么做，可以重写
 	@Nullable
 	T getIfUnique() throws BeansException;
 

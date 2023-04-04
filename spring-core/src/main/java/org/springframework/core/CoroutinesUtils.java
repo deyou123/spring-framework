@@ -46,6 +46,7 @@ import reactor.core.publisher.Mono;
  * @author Phillip Webb
  * @since 5.2
  */
+@SuppressWarnings("deprecation")
 public abstract class CoroutinesUtils {
 
 	/**

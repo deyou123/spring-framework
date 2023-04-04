@@ -16,9 +16,6 @@
 
 package org.springframework.context.annotation;
 
-import java.util.Arrays;
-import java.util.function.Supplier;
-
 import org.springframework.beans.factory.config.BeanDefinitionCustomizer;
 import org.springframework.beans.factory.support.BeanNameGenerator;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
@@ -27,6 +24,9 @@ import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.metrics.StartupStep;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
+
+import java.util.Arrays;
+import java.util.function.Supplier;
 
 /**
  * Standalone application context, accepting <em>component classes</em> as input &mdash;
@@ -66,8 +66,11 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 */
 	public AnnotationConfigApplicationContext() {
 		StartupStep createAnnotatedBeanDefReader = this.getApplicationStartup().start("spring.context.annotated-bean-reader.create");
+		// BeanDefinition的读取器, 核心方法register(), 可以直接将一个普通类转化为BeanDefinition,并且还会解析该普通类上定义的注解, 然后缓存到BeanDefinitionRegistry中
 		this.reader = new AnnotatedBeanDefinitionReader(this);
 		createAnnotatedBeanDefReader.end();
+
+		//核心方法scan(), 可以根据定义的扫描路径扫描类, 然后将普通类转化成一个个BeanDefinition,然后缓存到BeanDefinitionRegistry中
 		this.scanner = new ClassPathBeanDefinitionScanner(this);
 	}
 
@@ -87,9 +90,15 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 * @param componentClasses one or more component classes &mdash; for example,
 	 * {@link Configuration @Configuration} classes
 	 */
+	//Spring 创建容器三部曲
 	public AnnotationConfigApplicationContext(Class<?>... componentClasses) {
+		// 1. 给 AnnotationConfigApplicationContext 中的reader 赋值 scanner赋值
+
 		this();
+		// 解析AppConfig配置类, 生成BeanDefinition
 		register(componentClasses);
+
+		//生成容器,并创建完成所有的bean
 		refresh();
 	}
 

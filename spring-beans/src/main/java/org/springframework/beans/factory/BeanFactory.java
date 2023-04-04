@@ -125,6 +125,8 @@ public interface BeanFactory {
 	 * {@code myJndiObject} is a FactoryBean, getting {@code &myJndiObject}
 	 * will return the factory, not the instance returned by the factory.
 	 */
+
+	// 这个变量在获取一个FactoryBean时使用，后边详细介绍
 	String FACTORY_BEAN_PREFIX = "&";
 
 
@@ -140,6 +142,8 @@ public interface BeanFactory {
 	 * @throws NoSuchBeanDefinitionException if there is no bean with the specified name
 	 * @throws BeansException if the bean could not be obtained
 	 */
+
+	// 工厂的核心方法，提供了多种获取单个实例bean的能力
 	Object getBean(String name) throws BeansException;
 
 	/**
