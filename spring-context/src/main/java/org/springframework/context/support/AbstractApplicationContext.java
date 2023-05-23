@@ -303,6 +303,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	@Override
 	public ConfigurableEnvironment getEnvironment() {
 		if (this.environment == null) {
+			//创建环境
 			this.environment = createEnvironment();
 		}
 		return this.environment;
@@ -514,6 +515,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	@Override
 	public void refresh() throws BeansException, IllegalStateException {
 		synchronized (this.startupShutdownMonitor) {
+			//步骤记录
 			StartupStep contextRefresh = this.applicationStartup.start("spring.context.refresh");
 
 			// 1. Prepare this context for refreshing. 准备环境
@@ -532,6 +534,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				// Allows post-processing of the bean factory in context subclasses.
 				// 4. 检查工厂是否搭建完成,设备员工是否完善,一切准备就绪,就可以开工生产产品了
 				// 提供给AbstractApplicationContext的子类进行扩展，具体的子类，可以继续向BeanFactory中再添加一些东西
+				//空方法留给子类去扩展，
 				postProcessBeanFactory(beanFactory);
 
 				StartupStep beanPostProcess = this.applicationStartup.start("spring.context.beans.post-process");
@@ -544,6 +547,8 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				//注册新的BeanPostProcessor
 				//
 				//注册新的BeanFactoryPostProcessor
+
+				//调用bean 工厂所有的后置处理器
 				invokeBeanFactoryPostProcessors(beanFactory);
 
 				// Register bean processors that intercept bean creation.
@@ -635,25 +640,31 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		 * 并且可以被子类重写以自定义属性源的加载方式。
 		 * 在创建 Spring 应用程序时，initPropertySources() 方法是必须的，因为它为应用程序提供了必要的属性配置信息。
 		 */
+		//留给实现
 		initPropertySources();
 
 		// Validate that all properties marked as required are resolvable:
 		// see ConfigurablePropertyResolver#setRequiredProperties
 		//验证系统必要的环境变量,如果不满足抛出异常
+		//环境校验，判断是否为空
 		getEnvironment().validateRequiredProperties();
 
 		// Store pre-refresh ApplicationListeners...
+		//监听器初始化，如果之前没有，就新建一个
 		if (this.earlyApplicationListeners == null) {  //如果刷新前本地注册器为空
 			this.earlyApplicationListeners = new LinkedHashSet<>(this.applicationListeners);
 		}
 		else {
 			// Reset local application listeners to pre-refresh state.
+			//如果之前有，就清理，重新加入之前的监听器
 			this.applicationListeners.clear();
 			this.applicationListeners.addAll(this.earlyApplicationListeners); // 如果不为空，传递给applicationListeners
 		}
 
 		// Allow for the collection of early ApplicationEvents,
 		// to be published once the multicaster is available...
+
+		//早期事件
 		this.earlyApplicationEvents = new LinkedHashSet<>();
 	}
 
@@ -695,7 +706,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		beanFactory.addPropertyEditorRegistrar(new ResourceEditorRegistrar(this, getEnvironment()));
 
 		// Configure the bean factory with context callbacks.
-		// Bean 后置处理器
+		// 添加bean 的Bean 后置处理器
 		beanFactory.addBeanPostProcessor(new ApplicationContextAwareProcessor(this));
 
 		//该方法的作用是告诉Spring容器在处理依赖关系时忽略指定的接口。
@@ -911,7 +922,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * initializing all remaining singleton beans.
 	 */
 	protected void finishBeanFactoryInitialization(ConfigurableListableBeanFactory beanFactory) {
-		// Initialize conversion service for this context.
+		// 注入转换器
 		if (beanFactory.containsBean(CONVERSION_SERVICE_BEAN_NAME) &&
 				beanFactory.isTypeMatch(CONVERSION_SERVICE_BEAN_NAME, ConversionService.class)) {
 			beanFactory.setConversionService(

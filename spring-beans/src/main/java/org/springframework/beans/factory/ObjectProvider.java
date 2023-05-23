@@ -148,6 +148,7 @@ public interface ObjectProvider<T> extends ObjectFactory<T>, Iterable<T> {
 	 * @since 5.1
 	 * @see #stream()
 	 */
+	// 当匹配多个时，可以迭代处理
 	@Override
 	default Iterator<T> iterator() {
 		return stream().iterator();

@@ -58,6 +58,5 @@ settings.gradle.projectsLoaded {
 	}
 }
 include 'chapter01'
-
-
+include 'chapter03'
 

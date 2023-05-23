@@ -16,59 +16,9 @@
 
 package org.springframework.beans.factory.support;
 
-import java.beans.PropertyEditor;
-import java.security.AccessControlContext;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
-
-import org.springframework.beans.BeanUtils;
-import org.springframework.beans.BeanWrapper;
-import org.springframework.beans.BeansException;
-import org.springframework.beans.PropertyEditorRegistrar;
-import org.springframework.beans.PropertyEditorRegistry;
-import org.springframework.beans.PropertyEditorRegistrySupport;
-import org.springframework.beans.SimpleTypeConverter;
-import org.springframework.beans.TypeConverter;
-import org.springframework.beans.TypeMismatchException;
-import org.springframework.beans.factory.BeanCreationException;
-import org.springframework.beans.factory.BeanCurrentlyInCreationException;
-import org.springframework.beans.factory.BeanDefinitionStoreException;
-import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.BeanFactoryUtils;
-import org.springframework.beans.factory.BeanIsAbstractException;
-import org.springframework.beans.factory.BeanIsNotAFactoryException;
-import org.springframework.beans.factory.BeanNotOfRequiredTypeException;
-import org.springframework.beans.factory.CannotLoadBeanClassException;
-import org.springframework.beans.factory.FactoryBean;
-import org.springframework.beans.factory.NoSuchBeanDefinitionException;
-import org.springframework.beans.factory.SmartFactoryBean;
-import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.beans.factory.config.BeanDefinitionHolder;
-import org.springframework.beans.factory.config.BeanExpressionContext;
-import org.springframework.beans.factory.config.BeanExpressionResolver;
-import org.springframework.beans.factory.config.BeanPostProcessor;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.beans.factory.config.DestructionAwareBeanPostProcessor;
-import org.springframework.beans.factory.config.InstantiationAwareBeanPostProcessor;
-import org.springframework.beans.factory.config.Scope;
-import org.springframework.beans.factory.config.SmartInstantiationAwareBeanPostProcessor;
+import org.springframework.beans.*;
+import org.springframework.beans.factory.*;
+import org.springframework.beans.factory.config.*;
 import org.springframework.core.AttributeAccessor;
 import org.springframework.core.DecoratingClassLoader;
 import org.springframework.core.NamedThreadLocal;
@@ -78,11 +28,15 @@ import org.springframework.core.log.LogMessage;
 import org.springframework.core.metrics.ApplicationStartup;
 import org.springframework.core.metrics.StartupStep;
 import org.springframework.lang.Nullable;
-import org.springframework.util.Assert;
-import org.springframework.util.ClassUtils;
-import org.springframework.util.ObjectUtils;
-import org.springframework.util.StringUtils;
-import org.springframework.util.StringValueResolver;
+import org.springframework.util.*;
+
+import java.beans.PropertyEditor;
+import java.security.*;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 
 /**
  * Abstract base class for {@link org.springframework.beans.factory.BeanFactory}
@@ -248,155 +202,15 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	protected <T> T doGetBean(
 			String name, @Nullable Class<T> requiredType, @Nullable Object[] args, boolean typeCheckOnly)
 			throws BeansException {
-
+		//转化别名使用。找到可别解析的名字
 		String beanName = transformedBeanName(name);
 		Object beanInstance;
 
 		// Eagerly check singleton cache for manually registered singletons.
 		Object sharedInstance = getSingleton(beanName);
-		if (sharedInstance != null && args == null) {
-			if (logger.isTraceEnabled()) {
-				if (isSingletonCurrentlyInCreation(beanName)) {
-					logger.trace("Returning eagerly cached instance of singleton bean '" + beanName +
-							"' that is not fully initialized yet - a consequence of a circular reference");
-				}
-				else {
-					logger.trace("Returning cached instance of singleton bean '" + beanName + "'");
-				}
-			}
-			beanInstance = getObjectForBeanInstance(sharedInstance, name, beanName, null);
-		}
-
-		else {
-			// Fail if we're already creating this bean instance:
-			// We're assumably within a circular reference.
-			if (isPrototypeCurrentlyInCreation(beanName)) {
-				throw new BeanCurrentlyInCreationException(beanName);
-			}
-
-			// Check if bean definition exists in this factory.
-			BeanFactory parentBeanFactory = getParentBeanFactory();
-			if (parentBeanFactory != null && !containsBeanDefinition(beanName)) {
-				// Not found -> check parent.
-				String nameToLookup = originalBeanName(name);
-				if (parentBeanFactory instanceof AbstractBeanFactory) {
-					return ((AbstractBeanFactory) parentBeanFactory).doGetBean(
-							nameToLookup, requiredType, args, typeCheckOnly);
-				}
-				else if (args != null) {
-					// Delegation to parent with explicit args.
-					return (T) parentBeanFactory.getBean(nameToLookup, args);
-				}
-				else if (requiredType != null) {
-					// No args -> delegate to standard getBean method.
-					return parentBeanFactory.getBean(nameToLookup, requiredType);
-				}
-				else {
-					return (T) parentBeanFactory.getBean(nameToLookup);
-				}
-			}
-
-			if (!typeCheckOnly) {
-				markBeanAsCreated(beanName);
-			}
-
-			StartupStep beanCreation = this.applicationStartup.start("spring.beans.instantiate")
-					.tag("beanName", name);
-			try {
-				if (requiredType != null) {
-					beanCreation.tag("beanType", requiredType::toString);
-				}
-				RootBeanDefinition mbd = getMergedLocalBeanDefinition(beanName);
-				checkMergedBeanDefinition(mbd, beanName, args);
-
-				// Guarantee initialization of beans that the current bean depends on.
-				String[] dependsOn = mbd.getDependsOn();
-				if (dependsOn != null) {
-					for (String dep : dependsOn) {
-						if (isDependent(beanName, dep)) {
-							throw new BeanCreationException(mbd.getResourceDescription(), beanName,
-									"Circular depends-on relationship between '" + beanName + "' and '" + dep + "'");
-						}
-						registerDependentBean(dep, beanName);
-						try {
-							getBean(dep);
-						}
-						catch (NoSuchBeanDefinitionException ex) {
-							throw new BeanCreationException(mbd.getResourceDescription(), beanName,
-									"'" + beanName + "' depends on missing bean '" + dep + "'", ex);
-						}
-					}
-				}
-
-				// Create bean instance.
-				if (mbd.isSingleton()) {
-					sharedInstance = getSingleton(beanName, () -> {
-						try {
-							return createBean(beanName, mbd, args);
-						}
-						catch (BeansException ex) {
-							// Explicitly remove instance from singleton cache: It might have been put there
-							// eagerly by the creation process, to allow for circular reference resolution.
-							// Also remove any beans that received a temporary reference to the bean.
-							destroySingleton(beanName);
-							throw ex;
-						}
-					});
-					beanInstance = getObjectForBeanInstance(sharedInstance, name, beanName, mbd);
-				}
-
-				else if (mbd.isPrototype()) {
-					// It's a prototype -> create a new instance.
-					Object prototypeInstance = null;
-					try {
-						beforePrototypeCreation(beanName);
-						prototypeInstance = createBean(beanName, mbd, args);
-					}
-					finally {
-						afterPrototypeCreation(beanName);
-					}
-					beanInstance = getObjectForBeanInstance(prototypeInstance, name, beanName, mbd);
-				}
-
-				else {
-					String scopeName = mbd.getScope();
-					if (!StringUtils.hasLength(scopeName)) {
-						throw new IllegalStateException("No scope name defined for bean '" + beanName + "'");
-					}
-					Scope scope = this.scopes.get(scopeName);
-					if (scope == null) {
-						throw new IllegalStateException("No Scope registered for scope name '" + scopeName + "'");
-					}
-					try {
-						Object scopedInstance = scope.get(beanName, () -> {
-							beforePrototypeCreation(beanName);
-							try {
-								return createBean(beanName, mbd, args);
-							}
-							finally {
-								afterPrototypeCreation(beanName);
-							}
-						});
-						beanInstance = getObjectForBeanInstance(scopedInstance, name, beanName, mbd);
-					}
-					catch (IllegalStateException ex) {
-						throw new ScopeNotActiveException(beanName, scopeName, ex);
-					}
-				}
-			}
-			catch (BeansException ex) {
-				beanCreation.tag("exception", ex.getClass().toString());
-				beanCreation.tag("message", String.valueOf(ex.getMessage()));
-				cleanupAfterBeanCreationFailure(beanName);
-				throw ex;
-			}
-			finally {
-				beanCreation.end();
-			}
-		}
 
 		return adaptBeanInstance(name, beanInstance, requiredType);
-	}
+	}        
 
 	@SuppressWarnings("unchecked")
 	<T> T adaptBeanInstance(String name, Object bean, @Nullable Class<?> requiredType) {

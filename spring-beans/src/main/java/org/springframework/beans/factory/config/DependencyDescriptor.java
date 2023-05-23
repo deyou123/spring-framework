@@ -16,19 +16,8 @@
 
 package org.springframework.beans.factory.config;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.Serializable;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.Map;
-import java.util.Optional;
-
 import kotlin.reflect.KProperty;
 import kotlin.reflect.jvm.ReflectJvmMapping;
-
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.InjectionPoint;
@@ -41,6 +30,16 @@ import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.lang.Nullable;
 import org.springframework.util.ObjectUtils;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.Serializable;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.Map;
+import java.util.Optional;
+
 /**
  * Descriptor for a specific dependency that is about to be injected.
  * Wraps a constructor parameter, a method parameter or a field,
@@ -48,6 +47,11 @@ import org.springframework.util.ObjectUtils;
  *
  * @author Juergen Hoeller
  * @since 2.5
+ * 是一个依赖描述符，这个类可以包装构造函数参数、
+ * 方法参数或字段，允许统一访问它们的元数据，
+ * 这在注入的时候很有用，比如给定一个【构造参数的描述】或【字段的描述】或【setter方法】，
+ * 找到与之匹配的bean。
+ *
  */
 @SuppressWarnings("serial")
 public class DependencyDescriptor extends InjectionPoint implements Serializable {
