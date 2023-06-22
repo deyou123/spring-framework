@@ -535,6 +535,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				// 4. 检查工厂是否搭建完成,设备员工是否完善,一切准备就绪,就可以开工生产产品了
 				// 提供给AbstractApplicationContext的子类进行扩展，具体的子类，可以继续向BeanFactory中再添加一些东西
 				//空方法留给子类去扩展，
+				//主要是对BeanFacotory 的改造
 				postProcessBeanFactory(beanFactory);
 
 				StartupStep beanPostProcess = this.applicationStartup.start("spring.context.beans.post-process");
